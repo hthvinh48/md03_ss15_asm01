@@ -1,6 +1,10 @@
 package com.example.hrm.security.jwt;
 
 import com.example.hrm.security.UserDetailServiceCustom;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -52,8 +57,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-        } catch (Exception e) {
-            // token sai chữ ký, hết hạn, user không tồn tại...: bỏ qua, không đăng nhập
+        } catch (ExpiredJwtException e) {
+            request.setAttribute("jwt_error", "Token expired");
+            SecurityContextHolder.clearContext();
+        } catch (MalformedJwtException e) {
+            request.setAttribute("jwt_error", "Malformed token");
+            SecurityContextHolder.clearContext();
+        } catch (SignatureException e) {
+            request.setAttribute("jwt_error", "Invalid signature");
+            SecurityContextHolder.clearContext();
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException e) {
+            request.setAttribute("jwt_error", "Invalid token");
             SecurityContextHolder.clearContext();
         }
 
